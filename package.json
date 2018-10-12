@@ -5,7 +5,7 @@
   "scripts": {
     "compile": "./node_modules/.bin/truffle compile",
     "console": "./node_modules/.bin/truffle console --network development",
-    "deploy:dev": "./node_modules/.bin/truffle deploy --reset --network development",
+    "deploy:dev": "./node_modules/.bin/truffle migrate --reset --network development",
     "lint": "./node_modules/.bin/eslint .",
     "lint:fix": "./node_modules/.bin/eslint . --fix",
     "lint:sol": "./node_modules/.bin/solium -d .",
@@ -16,16 +16,20 @@
   },
   "dependencies": {
     "chainlink": "github:smartcontractkit/chainlink",
-    "ethereumjs-abi": "^0.6.5",
     "openzeppelin-solidity": "^1.12.0"
   },
   "devDependencies": {
-    "eslint": "^5.6.0",
+    "bignumber.js": "^7.2.1",
+    "cbor": "^4.1.1",
+    "eslint": "^5.6.1",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-import": "^2.14.0",
     "eslint-plugin-node": "^7.0.1",
     "eslint-plugin-promise": "^4.0.1",
     "eslint-plugin-standard": "^4.0.0",
+    "ethereumjs-abi": "^0.6.5",
+    "ethereumjs-util": "^6.0.0",
+    "moment": "^2.22.2",
     "solium": "^1.1.8",
     "solium-plugin-zeppelin": "^0.0.2"
   }

@@ -6,10 +6,16 @@ Implementation of [how to make a Chainlinked contract](https://docs.chain.link/d
 
 - NPM
 - Truffle
-- Yarn
+- Yarn (optional)
 - GCC (for testing)
 
 ## Installation
+
+```bash
+$ npm install
+```
+
+Or
 
 ```bash
 $ yarn install
@@ -18,7 +24,7 @@ $ yarn install
 ## Test
 
 ```bash
-$ truffle test
+$ npm test
 ```
 
 ## Deploy

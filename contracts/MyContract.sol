@@ -65,7 +65,7 @@ contract MyContract is Chainlinked, Ownable {
   }
 
   function withdrawLink() public onlyOwner {
-    LinkToken link = LinkToken(chainlinkToken());
+    LinkTokenInterface link = LinkTokenInterface(chainlinkToken());
     require(link.transfer(msg.sender, link.balanceOf(address(this))), "Unable to transfer");
   }
 

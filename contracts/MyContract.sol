@@ -13,12 +13,20 @@ contract MyContract is Chainlinked, Ownable {
 
   constructor() public Ownable() {}
 
-  function publicSetLinkToken(address _link) public onlyOwner {
+  function updateLinkToken(address _link) public onlyOwner {
     setLinkToken(_link);
   }
 
-  function publicSetOracle(address _oracle) public onlyOwner {
+  function getChainlinkToken() public view returns (address) {
+    return chainlinkToken();
+  }
+
+  function updateOracle(address _oracle) public onlyOwner {
     setOracle(_oracle);
+  }
+
+  function getOracle() public view returns (address) {
+    return oracleAddress();
   }
 
   function requestEthereumPrice(bytes32 _jobId, string _currency) public onlyOwner returns (bytes32 requestId) {

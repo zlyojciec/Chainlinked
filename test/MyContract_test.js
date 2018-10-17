@@ -17,34 +17,36 @@ contract("MyContract", () => {
     cc = await MyContract.new({from: consumer});
   });
 
-  describe("#publicSetLinkToken", () => {
+  describe("#updateLinkToken", () => {
     context("when called by a non-owner", () => {
       it("does not set", async () => {
         await assertActionThrows(async () => {
-          await cc.publicSetLinkToken(link.address, {from: stranger});
+          await cc.updateLinkToken(link.address, {from: stranger});
         });
       });
     });
 
     context("when called by the owner", () => {
       it("sets the LinkToken address", async () => {
-        await cc.publicSetLinkToken(link.address, {from: consumer});
+        await cc.updateLinkToken(link.address, {from: consumer});
+        assert.equal(await cc.getChainlinkToken.call(), link.address);
       });
     });
   });
 
-  describe("#publicSetOracle", () => {
+  describe("#updateOracle", () => {
     context("when called by a non-owner", () => {
       it("does not set", async () => {
         await assertActionThrows(async () => {
-          await cc.publicSetOracle(oc.address, {from: stranger});
+          await cc.updateOracle(oc.address, {from: stranger});
         });
       });
     });
 
     context("when called by the owner", () => {
       it("sets the oracle address", async () => {
-        await cc.publicSetOracle(oc.address, {from: consumer});
+        await cc.updateOracle(oc.address, {from: consumer});
+        assert.equal(await cc.getOracle.call(), oc.address);
       });
     });
   });
@@ -60,8 +62,8 @@ contract("MyContract", () => {
 
     context("with setting LinkToken and Oracle addresses", () => {
       beforeEach(async () => {
-        await cc.publicSetLinkToken(link.address, {from: consumer});
-        await cc.publicSetOracle(oc.address, {from: consumer});
+        await cc.updateLinkToken(link.address, {from: consumer});
+        await cc.updateOracle(oc.address, {from: consumer});
       });
 
       context("without LINK", () => {
@@ -105,7 +107,8 @@ contract("MyContract", () => {
 
         context("after updating the oracle contract address", () => {
           it("triggers a log event in the new Oracle contract", async () => {
-            await cc.publicSetOracle(newOc.address, {from: consumer});
+            await cc.updateOracle(newOc.address, {from: consumer});
+            assert.equal(await cc.getOracle.call(), newOc.address);
             let tx = await cc.requestEthereumPrice(jobId, market, {from: consumer});
             let log = tx.receipt.logs[3];
             assert.equal(log.address, newOc.address);
@@ -137,8 +140,8 @@ contract("MyContract", () => {
 
     beforeEach(async () => {
       await link.transfer(cc.address, web3.toWei("1", "ether"));
-      await cc.publicSetLinkToken(link.address, {from: consumer});
-      await cc.publicSetOracle(oc.address, {from: consumer});
+      await cc.updateLinkToken(link.address, {from: consumer});
+      await cc.updateOracle(oc.address, {from: consumer});
       await cc.requestEthereumPrice(jobId, market, {from: consumer});
       let event = await getLatestEvent(oc);
       internalId = event.args.internalId;
@@ -192,8 +195,8 @@ contract("MyContract", () => {
 
     beforeEach(async () => {
       await link.transfer(cc.address, web3.toWei("1", "ether"));
-      await cc.publicSetLinkToken(link.address, {from: consumer});
-      await cc.publicSetOracle(oc.address, {from: consumer});
+      await cc.updateLinkToken(link.address, {from: consumer});
+      await cc.updateOracle(oc.address, {from: consumer});
       requestId = await cc.requestEthereumPrice.call(jobId, market, {from: consumer});
     });
 
@@ -210,7 +213,7 @@ contract("MyContract", () => {
   describe("#withdrawLink", () => {
     beforeEach(async () => {
       await link.transfer(cc.address, web3.toWei("1", "ether"));
-      await cc.publicSetLinkToken(link.address, {from: consumer});
+      await cc.updateLinkToken(link.address, {from: consumer});
     });
 
     context("when called by a non-owner", () => {

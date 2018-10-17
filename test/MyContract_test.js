@@ -50,53 +50,37 @@ contract("MyContract", () => {
     });
   });
 
-  describe("#setJobId", () => {
-    context("when called by a non-owner", () => {
-      it("does not set", async () => {
-        await assertActionThrows(async () => {
-          await cc.setJobId(jobId, {from: stranger});
-        });
-      });
-    });
-
-    context("when called by the owner", () => {
-      it("sets the job id", async () => {
-        await cc.setJobId(jobId, {from: consumer});
-      });
-    });
-  });
-
   describe("#requestEthereumPrice", () => {
-    context("without a JobID", () => {
+    context("without setting LinkToken or Oracle addresses", () => {
       it("reverts", async () => {
         await assertActionThrows(async () => {
-          await cc.requestEthereumPrice(market, {from: consumer});
+          await cc.requestEthereumPrice(jobId, market, {from: consumer});
         });
       });
     });
 
-    context("with a JobID", () => {
+    context("with setting LinkToken and Oracle addresses", () => {
       beforeEach(async () => {
-        await cc.setJobId(jobId, {from: consumer});
+        await cc.publicSetLinkToken(link.address, {from: consumer});
+        await cc.publicSetOracle(oc.address, {from: consumer});
       });
 
       context("without LINK", () => {
         it("reverts", async () => {
           await assertActionThrows(async () => {
-            await cc.requestEthereumPrice(market, {from: consumer});
+            await cc.requestEthereumPrice(jobId, market, {from: consumer});
           });
         });
       });
 
       context("with LINK", () => {
         beforeEach(async () => {
-          await cc.publicSetLinkToken(link.address, {from: consumer});
-          await cc.publicSetOracle(oc.address, {from: consumer});
+          
           await link.transfer(cc.address, web3.toWei("1", "ether"));
         });
 
         it("triggers a log event in the Oracle contract", async () => {
-          let tx = await cc.requestEthereumPrice(market, {from: consumer});
+          let tx = await cc.requestEthereumPrice(jobId, market, {from: consumer});
           let log = tx.receipt.logs[3];
           assert.equal(log.address, oc.address);
 
@@ -117,7 +101,7 @@ contract("MyContract", () => {
         });
 
         it("has a reasonable gas cost", async () => {
-          let tx = await cc.requestEthereumPrice(market, {from: consumer});
+          let tx = await cc.requestEthereumPrice(jobId, market, {from: consumer});
           assert.isBelow(tx.receipt.gasUsed, 210000);
         });
       });
@@ -132,8 +116,7 @@ contract("MyContract", () => {
       await link.transfer(cc.address, web3.toWei("1", "ether"));
       await cc.publicSetLinkToken(link.address, {from: consumer});
       await cc.publicSetOracle(oc.address, {from: consumer});
-      await cc.setJobId(jobId, {from: consumer});
-      await cc.requestEthereumPrice(market, {from: consumer});
+      await cc.requestEthereumPrice(jobId, market, {from: consumer});
       let event = await getLatestEvent(oc);
       internalId = event.args.internalId;
     });
@@ -187,8 +170,7 @@ contract("MyContract", () => {
       await link.transfer(cc.address, web3.toWei("1", "ether"));
       await cc.publicSetLinkToken(link.address, {from: consumer});
       await cc.publicSetOracle(oc.address, {from: consumer});
-      await cc.setJobId(jobId, {from: consumer});
-      await cc.requestEthereumPrice(market, {from: consumer});
+      await cc.requestEthereumPrice(jobId, market, {from: consumer});
     });
 
     context("when called by a non-owner", () => {

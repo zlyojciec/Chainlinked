@@ -5,7 +5,6 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 contract MyContract is Chainlinked, Ownable {
   bytes32 internal requestId;
-  bytes32 internal jobId;
   bytes32 public currentPrice;
 
   event RequestFulfilled(
@@ -23,16 +22,8 @@ contract MyContract is Chainlinked, Ownable {
     setOracle(_oracle);
   }
 
-  function setJobId(bytes32 _jobId) public onlyOwner {
-    jobId = _jobId;
-  }
-
-  function requestEthereumPrice(string _currency)
-    public
-    onlyOwner
-    withJobId
-  {
-    ChainlinkLib.Run memory run = newRun(jobId, this, "fulfill(bytes32,bytes32)");
+  function requestEthereumPrice(bytes32 _jobId, string _currency) public onlyOwner {
+    ChainlinkLib.Run memory run = newRun(_jobId, this, "fulfill(bytes32,bytes32)");
     run.add("url", "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD,EUR,JPY");
     string[] memory path = new string[](1);
     path[0] = _currency;
@@ -41,17 +32,11 @@ contract MyContract is Chainlinked, Ownable {
     requestId = chainlinkRequest(run, LINK(1));
   }
 
-  function cancelRequest()
-    public
-    onlyOwner
-  {
+  function cancelRequest() public onlyOwner {
     cancelChainlinkRequest(requestId);
   }
 
-  function fulfill(bytes32 _requestId, bytes32 _price)
-    public
-    checkChainlinkFulfillment(_requestId)
-  {
+  function fulfill(bytes32 _requestId, bytes32 _price) public checkChainlinkFulfillment(_requestId) {
     emit RequestFulfilled(_requestId, _price);
     currentPrice = _price;
   }
@@ -61,8 +46,4 @@ contract MyContract is Chainlinked, Ownable {
     require(link.transfer(msg.sender, link.balanceOf(address(this))), "Unable to transfer");
   }
 
-  modifier withJobId() {
-    require(jobId != 0x00, "No JobID present");
-    _;
-  }
 }

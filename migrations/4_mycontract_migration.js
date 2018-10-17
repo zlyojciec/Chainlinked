@@ -1,5 +1,5 @@
 var MyContract = artifacts.require("MyContract");
 
-module.exports = async (deployer) => {
+module.exports = deployer => {
   deployer.deploy(MyContract);
 };

@@ -4,7 +4,6 @@ import "chainlink/solidity/contracts/Chainlinked.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 contract MyContract is Chainlinked, Ownable {
-  bytes32 internal requestId;
   bytes32 public currentPrice;
 
   event RequestFulfilled(
@@ -22,7 +21,7 @@ contract MyContract is Chainlinked, Ownable {
     setOracle(_oracle);
   }
 
-  function requestEthereumPrice(bytes32 _jobId, string _currency) public onlyOwner {
+  function requestEthereumPrice(bytes32 _jobId, string _currency) public onlyOwner returns (bytes32 requestId) {
     ChainlinkLib.Run memory run = newRun(_jobId, this, "fulfill(bytes32,bytes32)");
     run.add("url", "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD,EUR,JPY");
     string[] memory path = new string[](1);
@@ -32,8 +31,8 @@ contract MyContract is Chainlinked, Ownable {
     requestId = chainlinkRequest(run, LINK(1));
   }
 
-  function cancelRequest() public onlyOwner {
-    cancelChainlinkRequest(requestId);
+  function cancelRequest(bytes32 _requestId) public onlyOwner {
+    cancelChainlinkRequest(_requestId);
   }
 
   function fulfill(bytes32 _requestId, bytes32 _price) public checkChainlinkFulfillment(_requestId) {

@@ -131,7 +131,8 @@ contract("MyContract", () => {
   });
 
   describe("#fulfillData", () => {
-    let response = "1,000,000.00";
+    let expected = 50000
+    let response = "0x" + encodeUint256(expected);
     let internalId;
 
     beforeEach(async () => {
@@ -146,15 +147,14 @@ contract("MyContract", () => {
     it("records the data given to it by the oracle", async () => {
       await oc.fulfillData(internalId, response, {from: oracleNode});
       let currentPrice = await cc.currentPrice.call();
-      assert.equal(web3.toUtf8(currentPrice), response);
+      assert.equal(currentPrice.toNumber(), expected);
     });
 
     it("logs the data given to it by the oracle", async () => {
       let tx = await oc.fulfillData(internalId, response, {from: oracleNode});
       assert.equal(2, tx.receipt.logs.length);
       let log = tx.receipt.logs[0];
-
-      assert.equal(web3.toUtf8(log.topics[2]), response);
+      assert.equal(log.topics[2], response);
     });
 
     context("when my contract does not recognize the request ID", () => {
@@ -170,19 +170,19 @@ contract("MyContract", () => {
 
       it("does not accept the data provided", async () => {
         await oc.fulfillData(otherId, response, {from: oracleNode});
-        let received = await cc.currentPrice.call();
-        assert.equal(web3.toUtf8(received), "");
+        let currentPrice = await cc.currentPrice.call();
+        assert.equal(currentPrice.toNumber(), 0);
       });
     });
 
     context("when called by anyone other than the oracle contract", () => {
       it("does not accept the data provided", async () => {
         await assertActionThrows(async () => {
-          await cc.fulfill(internalId, response, {from: oracleNode});
+          await cc.fulfill("1", response, {from: stranger});
         });
 
-        let received = await cc.currentPrice.call();
-        assert.equal(web3.toUtf8(received), "");
+        let currentPrice = await cc.currentPrice.call();
+        assert.equal(currentPrice.toNumber(), 0);
       });
     });
   });

@@ -131,7 +131,7 @@ contract("MyContract", () => {
   });
 
   describe("#fulfillData", () => {
-    let expected = 50000
+    let expected = 50000;
     let response = "0x" + encodeUint256(expected);
     let internalId;
 

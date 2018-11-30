@@ -87,7 +87,7 @@ contract("MyContract", () => {
           let [jId, requester, wei, id, ver, cborData] = decodeRunRequest(log);
           let params = await cbor.decodeFirst(cborData);
           let expected = {
-            "path":["USD"],
+            "path":"USD",
             "times": 100,
             "url":"https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD,EUR,JPY"
           };
@@ -116,7 +116,7 @@ contract("MyContract", () => {
             let [jId, requester, wei, id, ver, cborData] = decodeRunRequest(log);
             let params = await cbor.decodeFirst(cborData);
             let expected = {
-              "path":["USD"],
+              "path":"USD",
               "times": 100,
               "url":"https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD,EUR,JPY"
             };
@@ -156,7 +156,7 @@ contract("MyContract", () => {
     it("logs the data given to it by the oracle", async () => {
       let tx = await oc.fulfillData(internalId, response, {from: oracleNode});
       assert.equal(2, tx.receipt.logs.length);
-      let log = tx.receipt.logs[0];
+      let log = tx.receipt.logs[1];
       assert.equal(log.topics[2], response);
     });
 

@@ -4,6 +4,7 @@ import "chainlink/solidity/contracts/Chainlinked.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 contract MyContract is Chainlinked, Ownable {
+  uint256 constant private ORACLE_PAYMENT = 1 * LINK;
   uint256 public currentPrice;
 
   event RequestFulfilled(
@@ -34,7 +35,7 @@ contract MyContract is Chainlinked, Ownable {
     run.add("url", "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD,EUR,JPY");
     run.add("path", _currency);
     run.addInt("times", 100);
-    requestId = chainlinkRequest(run, LINK(1));
+    requestId = chainlinkRequest(run, ORACLE_PAYMENT);
   }
 
   function cancelRequest(bytes32 _requestId) public onlyOwner {

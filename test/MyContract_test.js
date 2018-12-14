@@ -136,7 +136,7 @@ contract("MyContract", () => {
   describe("#fulfillData", () => {
     let expected = 50000;
     let response = "0x" + encodeUint256(expected);
-    let internalId;
+    let requestId;
 
     beforeEach(async () => {
       await link.transfer(cc.address, web3.toWei("1", "ether"));
@@ -144,17 +144,17 @@ contract("MyContract", () => {
       await cc.updateOracle(oc.address, {from: consumer});
       await cc.requestEthereumPrice(jobId, market, {from: consumer});
       let event = await getLatestEvent(oc);
-      internalId = event.args.internalId;
+      requestId = event.args.requestId;
     });
 
     it("records the data given to it by the oracle", async () => {
-      await oc.fulfillData(internalId, response, {from: oracleNode});
+      await oc.fulfillData(requestId, response, {from: oracleNode});
       let currentPrice = await cc.currentPrice.call();
       assert.equal(currentPrice.toNumber(), expected);
     });
 
     it("logs the data given to it by the oracle", async () => {
-      let tx = await oc.fulfillData(internalId, response, {from: oracleNode});
+      let tx = await oc.fulfillData(requestId, response, {from: oracleNode});
       assert.equal(2, tx.receipt.logs.length);
       let log = tx.receipt.logs[1];
       assert.equal(log.topics[2], response);
@@ -168,7 +168,7 @@ contract("MyContract", () => {
         let args = requestDataBytes(jobId, cc.address, funcSig, 42, "");
         await requestDataFrom(oc, link, 0, args);
         let event = await getLatestEvent(oc);
-        otherId = event.args.internalId;
+        otherId = event.args.requestId;
       });
 
       it("does not accept the data provided", async () => {

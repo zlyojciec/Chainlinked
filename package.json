@@ -5,7 +5,7 @@
   "scripts": {
     "compile": "./node_modules/.bin/truffle compile",
     "console": "./node_modules/.bin/truffle console --network development",
-    "deploy:dev": "./node_modules/.bin/truffle migrate --reset --network development",
+    "migrate": "./node_modules/.bin/truffle migrate --reset --network development",
     "lint": "./node_modules/.bin/eslint .",
     "lint:fix": "./node_modules/.bin/eslint . --fix",
     "lint:sol": "./node_modules/.bin/solium -d .",

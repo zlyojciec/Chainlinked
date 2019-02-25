@@ -4,12 +4,11 @@
 	".gitignore"
   ],
   "commands": {
-    "Compile": "./node_modules/.bin/truffle compile",
-    "Migrate": "./node_modules/.bin/truffle migrate --reset --network development",
-    "Test contracts": "./node_modules/.bin/truffle test",
-    "Test dapp": "./node_modules/.bin/truffle test"
+    "Compile": "npm run compile",
+    "Migrate": "npm run migrate",
+    "Test": "npm test"
   },
   "hooks": {
-    "post-unpack": "npm install && npm test"
+    "post-unpack": "npm install"
   }
 }

@@ -1,210 +1,150 @@
 "use strict";
 
-require("./support/helpers.js");
+const h = require("chainlink-test-helpers");
 
-contract("MyContract", () => {
-  let Link = artifacts.require("LinkToken.sol");
-  let Oracle = artifacts.require("Oracle.sol");
-  let MyContract = artifacts.require("MyContract.sol");
-  let jobId = "4c7b7ffb66b344fbaa64995af81e355a";
-  let market = "USD";
+contract("MyContract", (accounts) => {
+  const LinkToken = artifacts.require("LinkToken.sol");
+  const Oracle = artifacts.require("Oracle.sol");
+  const MyContract = artifacts.require("MyContract.sol");
+  const jobId = web3.utils.toHex("4c7b7ffb66b344fbaa64995af81e355a");
+  const url = "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD,EUR,JPY";
+  const path = "USD";
+  const times = 100;
+  const defaultAccount = accounts[0];
+  const oracleNode = accounts[1];
+  const stranger = accounts[2];
+  const consumer = accounts[3];
   let link, oc, cc, newOc;
 
   beforeEach(async () => {
-    link = await Link.new();
-    oc = await Oracle.new(link.address, {from: oracleNode});
-    newOc = await Oracle.new(link.address, {from: oracleNode});
-    cc = await MyContract.new({from: consumer});
+    link = await LinkToken.new();
+    oc = await Oracle.new(
+      link.address,
+      {from: defaultAccount});
+    newOc = await Oracle.new(
+      link.address,
+      {from: defaultAccount});
+    cc = await MyContract.new(
+      link.address,
+      oc.address,
+      {from: consumer});
+    await oc.setFulfillmentPermission(
+      oracleNode,
+      true,
+      {from: defaultAccount});
+    await newOc.setFulfillmentPermission(
+      oracleNode,
+      true,
+      {from: defaultAccount});
   });
 
-  describe("#updateLinkToken", () => {
-    context("when called by a non-owner", () => {
-      it("does not set", async () => {
-        await assertActionThrows(async () => {
-          await cc.updateLinkToken(link.address, {from: stranger});
-        });
-      });
-    });
-
-    context("when called by the owner", () => {
-      it("sets the LinkToken address", async () => {
-        await cc.updateLinkToken(link.address, {from: consumer});
-        assert.equal(await cc.getChainlinkToken.call(), link.address);
-      });
-    });
-  });
-
-  describe("#updateOracle", () => {
-    context("when called by a non-owner", () => {
-      it("does not set", async () => {
-        await assertActionThrows(async () => {
-          await cc.updateOracle(oc.address, {from: stranger});
-        });
-      });
-    });
-
-    context("when called by the owner", () => {
-      it("sets the oracle address", async () => {
-        await cc.updateOracle(oc.address, {from: consumer});
-        assert.equal(await cc.getOracle.call(), oc.address);
-      });
-    });
-  });
-
-  describe("#requestEthereumPrice", () => {
-    context("without setting LinkToken or Oracle addresses", () => {
+  describe("#createRequest", () => {
+    context("without LINK", () => {
       it("reverts", async () => {
-        await assertActionThrows(async () => {
-          await cc.requestEthereumPrice(jobId, market, {from: consumer});
+        await h.assertActionThrows(async () => {
+          await cc.createRequest(jobId, url, path, times, {from: consumer});
         });
       });
     });
 
-    context("with setting LinkToken and Oracle addresses", () => {
+    context("with LINK", () => {
+	  let request;
+
       beforeEach(async () => {
-        await cc.updateLinkToken(link.address, {from: consumer});
-        await cc.updateOracle(oc.address, {from: consumer});
+        await link.transfer(cc.address, web3.utils.toWei("1", "ether"));
       });
 
-      context("without LINK", () => {
-        it("reverts", async () => {
-          await assertActionThrows(async () => {
-            await cc.requestEthereumPrice(jobId, market, {from: consumer});
-          });
-        });
+      it("triggers a log event in the Oracle contract", async () => {
+        let tx = await cc.createRequest(jobId, url, path, times, {from: consumer});
+        request = h.decodeRunRequest(tx.receipt.rawLogs[3]);
+        assert.equal(oc.address, tx.receipt.rawLogs[3].address);
+        assert.equal(request.topic, web3.utils.keccak256("OracleRequest(bytes32,address,bytes32,uint256,address,bytes4,uint256,uint256,bytes)"));
       });
 
-      context("with LINK", () => {
-        beforeEach(async () => {
-          await link.transfer(cc.address, web3.toWei("1", "ether"));
-        });
-
-        it("triggers a log event in the Oracle contract", async () => {
-          let tx = await cc.requestEthereumPrice(jobId, market, {from: consumer});
-          let log = tx.receipt.logs[3];
-          assert.equal(log.address, oc.address);
-
-          let [jId, requester, wei, id, ver, cborData] = decodeRunRequest(log);
-          let params = await cbor.decodeFirst(cborData);
-          let expected = {
-            "path":"USD",
-            "times": 100,
-            "url":"https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD,EUR,JPY"
-          };
-          
-          assert.isAbove(id.toNumber(), 0);
-          assert.equal(cc.address.slice(2), requester.slice(26));
-          assert.equal(`0x${toHex(rPad(jobId))}`, jId);
-          assert.equal(web3.toWei("1", "ether"), hexToInt(wei));
-          assert.equal(1, ver);
-          assert.deepEqual(expected, params);
-        });
-
-        it("has a reasonable gas cost", async () => {
-          let tx = await cc.requestEthereumPrice(jobId, market, {from: consumer});
-          assert.isBelow(tx.receipt.gasUsed, 210000);
-        });
-
-        context("after updating the oracle contract address", () => {
-          it("triggers a log event in the new Oracle contract", async () => {
-            await cc.updateOracle(newOc.address, {from: consumer});
-            assert.equal(await cc.getOracle.call(), newOc.address);
-            let tx = await cc.requestEthereumPrice(jobId, market, {from: consumer});
-            let log = tx.receipt.logs[3];
-            assert.equal(log.address, newOc.address);
-
-            let [jId, requester, wei, id, ver, cborData] = decodeRunRequest(log);
-            let params = await cbor.decodeFirst(cborData);
-            let expected = {
-              "path":"USD",
-              "times": 100,
-              "url":"https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD,EUR,JPY"
-            };
-            
-            assert.isAbove(id.toNumber(), 0);
-            assert.equal(cc.address.slice(2), requester.slice(26));
-            assert.equal(`0x${toHex(rPad(jobId))}`, jId);
-            assert.equal(web3.toWei("1", "ether"), hexToInt(wei));
-            assert.equal(1, ver);
-            assert.deepEqual(expected, params);
-          });
+      context("sending a request to a specific oracle contract address", () => {
+        it("triggers a log event in the new Oracle contract", async () => {
+          let tx = await cc.createRequestTo(newOc.address, jobId, url, path, times, {from: consumer});
+          request = h.decodeRunRequest(tx.receipt.rawLogs[3]);
+          assert.equal(newOc.address, tx.receipt.rawLogs[3].address);
+          assert.equal(request.topic, web3.utils.keccak256("OracleRequest(bytes32,address,bytes32,uint256,address,bytes4,uint256,uint256,bytes)"));
         });
       });
     });
   });
 
-  describe("#fulfillData", () => {
-    let expected = 50000;
-    let response = "0x" + encodeUint256(expected);
-    let requestId;
+  describe("#fulfill", () => {
+    const expected = 50000;
+    const response = web3.utils.toHex(expected);
+    let request;
 
     beforeEach(async () => {
-      await link.transfer(cc.address, web3.toWei("1", "ether"));
-      await cc.updateLinkToken(link.address, {from: consumer});
-      await cc.updateOracle(oc.address, {from: consumer});
-      await cc.requestEthereumPrice(jobId, market, {from: consumer});
-      let event = await getLatestEvent(oc);
-      requestId = event.args.requestId;
+      await link.transfer(cc.address, web3.utils.toWei("1", "ether"));
+      let tx = await cc.createRequest(jobId, url, path, times, {from: consumer});
+      request = h.decodeRunRequest(tx.receipt.rawLogs[3]);
+      await h.fulfillOracleRequest(oc, request, response, {from: oracleNode});
     });
 
     it("records the data given to it by the oracle", async () => {
-      await oc.fulfillData(requestId, response, {from: oracleNode});
-      let currentPrice = await cc.currentPrice.call();
-      assert.equal(currentPrice.toNumber(), expected);
-    });
-
-    it("logs the data given to it by the oracle", async () => {
-      let tx = await oc.fulfillData(requestId, response, {from: oracleNode});
-      assert.equal(2, tx.receipt.logs.length);
-      let log = tx.receipt.logs[1];
-      assert.equal(log.topics[2], response);
+      const currentPrice = await cc.data.call();
+      assert.equal(web3.utils.toHex(currentPrice), web3.utils.padRight(expected, 64));
     });
 
     context("when my contract does not recognize the request ID", () => {
-      let otherId;
+      const otherId = web3.utils.toHex("otherId");
 
       beforeEach(async () => {
-        let funcSig = functionSelector("fulfill(bytes32,bytes32)");
-        let args = requestDataBytes(jobId, cc.address, funcSig, 42, "");
-        await requestDataFrom(oc, link, 0, args);
-        let event = await getLatestEvent(oc);
-        otherId = event.args.requestId;
+        request.id = otherId;
       });
 
       it("does not accept the data provided", async () => {
-        await oc.fulfillData(otherId, response, {from: oracleNode});
-        let currentPrice = await cc.currentPrice.call();
-        assert.equal(currentPrice.toNumber(), 0);
+        await h.assertActionThrows(async () => {
+          await h.fulfillOracleRequest(oc, request, response, {from: oracleNode});
+        });
       });
     });
 
     context("when called by anyone other than the oracle contract", () => {
       it("does not accept the data provided", async () => {
-        await assertActionThrows(async () => {
-          await cc.fulfill("1", response, {from: stranger});
+        await h.assertActionThrows(async () => {
+          await cc.fulfill(request.id, response, {from: stranger});
         });
-
-        let currentPrice = await cc.currentPrice.call();
-        assert.equal(currentPrice.toNumber(), 0);
       });
     });
   });
 
   describe("#cancelRequest", () => {
-    let requestId;
+    let request;
 
     beforeEach(async () => {
-      await link.transfer(cc.address, web3.toWei("1", "ether"));
-      await cc.updateLinkToken(link.address, {from: consumer});
-      await cc.updateOracle(oc.address, {from: consumer});
-      requestId = await cc.requestEthereumPrice.call(jobId, market, {from: consumer});
+      await link.transfer(cc.address, web3.utils.toWei("1", "ether"));
+      let tx = await cc.createRequest(jobId, url, path, times, {from: consumer});
+      request = h.decodeRunRequest(tx.receipt.rawLogs[3]);
     });
-
-    context("when called by a non-owner", () => {
+  
+    context("before the expiration time", () => {
       it("cannot cancel a request", async () => {
-        await increaseTime5Minutes();
-        await assertActionThrows(async () => {
-          await cc.cancelRequest(requestId, {from: stranger});
+        await h.assertActionThrows(async () => {
+          await cc.cancelRequest(request.id, request.payment, request.callbackFunc, request.expiration, {from: consumer});
+        });
+      });
+    });
+  
+    context("after the expiration time", () => {
+      beforeEach(async () => {
+        await h.increaseTime5Minutes();
+	  });
+
+      context("when called by a non-owner", () => {
+        it("cannot cancel a request", async () => {
+          await h.assertActionThrows(async () => {
+            await cc.cancelRequest(request.id, request.payment, request.callbackFunc, request.expiration, {from: stranger});
+          });
+        });
+	  });
+
+      context("when called by an owner", () => {
+        it("can cancel a request", async () => {
+		  await cc.cancelRequest(request.id, request.payment, request.callbackFunc, request.expiration, {from: consumer});
         });
       });
     });
@@ -212,13 +152,12 @@ contract("MyContract", () => {
 
   describe("#withdrawLink", () => {
     beforeEach(async () => {
-      await link.transfer(cc.address, web3.toWei("1", "ether"));
-      await cc.updateLinkToken(link.address, {from: consumer});
+      await link.transfer(cc.address, web3.utils.toWei("1", "ether"));
     });
 
     context("when called by a non-owner", () => {
       it("cannot withdraw", async () => {
-        await assertActionThrows(async () => {
+        await h.assertActionThrows(async () => {
           await cc.withdrawLink({from: stranger});
         });
       });
@@ -227,10 +166,10 @@ contract("MyContract", () => {
     context("when called by the owner", () => {
       it("transfers LINK to the owner", async () => {
         const beforeBalance = await link.balanceOf(consumer);
-        assert.equal(beforeBalance.toString(), "0");
+        assert.equal(beforeBalance, "0");
         await cc.withdrawLink({from: consumer});
         const afterBalance = await link.balanceOf(consumer);
-        assert.equal(afterBalance.toString(), web3.toWei("1", "ether"));
+        assert.equal(afterBalance, web3.utils.toWei("1", "ether"));
       });
     });
   });

@@ -15,7 +15,7 @@
     "test": "./node_modules/.bin/truffle test"
   },
   "dependencies": {
-    "chainlink": "github:smartcontractkit/chainlink",
+    "chainlink.js": "^0.6.0",
     "chainlink-test-helpers": "^0.6.0-3",
     "openzeppelin-solidity": "^1.12.0"
   },

@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "chainlink.js/contracts/Chainlinked.sol";
+import "chainlink/contracts/Chainlinked.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 contract MyContract is Chainlinked, Ownable {

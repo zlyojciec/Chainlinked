@@ -1,24 +1,24 @@
 pragma solidity 0.4.24;
 
-import "chainlink/contracts/Chainlinked.sol";
+import "chainlink/contracts/ChainlinkClient.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
-contract MyContract is Chainlinked, Ownable {
+contract MyContract is ChainlinkClient, Ownable {
   // solium-disable-next-line zeppelin/no-arithmetic-operations
   uint256 constant private ORACLE_PAYMENT = 1 * LINK;
   uint256 public data;
 
   constructor(address _link, address _oracle) public {
-    setLinkToken(_link);
-    setOracle(_oracle);
+    setChainlinkToken(_link);
+    setChainlinkOracle(_oracle);
   }
 
   function getChainlinkToken() public view returns (address) {
-    return chainlinkToken();
+    return chainlinkTokenAddress();
   }
 
   function getOracle() public view returns (address) {
-    return oracleAddress();
+    return chainlinkOracleAddress();
   }
 
   function createRequest(
@@ -29,7 +29,7 @@ contract MyContract is Chainlinked, Ownable {
   )
     public
     onlyOwner
-    returns (bytes32) 
+    returns (bytes32)
   {
     return createRequestTo(getOracle(), _jobId, _url, _path, _times);
   }
@@ -43,13 +43,13 @@ contract MyContract is Chainlinked, Ownable {
   )
     public
     onlyOwner
-    returns (bytes32 requestId) 
+    returns (bytes32 requestId)
   {
-    Chainlink.Request memory req = newRequest(_jobId, this, this.fulfill.selector);
+    Chainlink.Request memory req = buildChainlinkRequest(_jobId, this, this.fulfill.selector);
     req.add("url", _url);
     req.add("path", _path);
     req.addInt("times", _times);
-    requestId = chainlinkRequestTo(_oracle, req, ORACLE_PAYMENT);
+    requestId = sendChainlinkRequestTo(_oracle, req, ORACLE_PAYMENT);
   }
 
   function fulfill(bytes32 _requestId, uint256 _data)
@@ -60,7 +60,7 @@ contract MyContract is Chainlinked, Ownable {
   }
 
   function withdrawLink() public onlyOwner {
-    LinkTokenInterface link = LinkTokenInterface(chainlinkToken());
+    LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
     require(link.transfer(msg.sender, link.balanceOf(address(this))), "Unable to transfer");
   }
 
@@ -71,7 +71,7 @@ contract MyContract is Chainlinked, Ownable {
     uint256 _expiration
   )
     public
-	onlyOwner
+	  onlyOwner
   {
     cancelChainlinkRequest(_requestId, _payment, _callbackFunctionId, _expiration);
   }

@@ -1,7 +1,7 @@
 {
   "ignore": [
     "README.md",
-	".gitignore"
+	  ".gitignore"
   ],
   "commands": {
     "Compile": "npm run compile",

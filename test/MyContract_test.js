@@ -22,25 +22,20 @@ contract("MyContract", (accounts) => {
   const path = "USD";
   const times = 100;
 
-  let link, oc, cc, newOc;
+  // Represents 1 LINK for testnet requests
+  const payment = web3.utils.toWei("1");
+
+  let link, oc, cc;
 
   beforeEach(async () => {
     link = await LinkToken.new();
     oc = await Oracle.new(
       link.address,
       {from: defaultAccount});
-    newOc = await Oracle.new(
-      link.address,
-      {from: defaultAccount});
     cc = await MyContract.new(
       link.address,
-      oc.address,
       {from: consumer});
     await oc.setFulfillmentPermission(
-      oracleNode,
-      true,
-      {from: defaultAccount});
-    await newOc.setFulfillmentPermission(
       oracleNode,
       true,
       {from: defaultAccount});
@@ -50,30 +45,23 @@ contract("MyContract", (accounts) => {
     context("without LINK", () => {
       it("reverts", async () => {
         await h.assertActionThrows(async () => {
-          await cc.createRequest(jobId, url, path, times, {from: consumer});
+          await cc.createRequestTo(oc.address, jobId, payment, url, path, times, {from: consumer});
         });
       });
     });
 
     context("with LINK", () => {
-	  let request;
+      let request;
 
       beforeEach(async () => {
         await link.transfer(cc.address, web3.utils.toWei("1", "ether"));
       });
 
-      it("triggers a log event in the Oracle contract", async () => {
-        let tx = await cc.createRequest(jobId, url, path, times, {from: consumer});
-        request = h.decodeRunRequest(tx.receipt.rawLogs[3]);
-        assert.equal(oc.address, tx.receipt.rawLogs[3].address);
-        assert.equal(request.topic, web3.utils.keccak256("OracleRequest(bytes32,address,bytes32,uint256,address,bytes4,uint256,uint256,bytes)"));
-      });
-
       context("sending a request to a specific oracle contract address", () => {
         it("triggers a log event in the new Oracle contract", async () => {
-          let tx = await cc.createRequestTo(newOc.address, jobId, url, path, times, {from: consumer});
+          let tx = await cc.createRequestTo(oc.address, jobId, payment, url, path, times, {from: consumer});
           request = h.decodeRunRequest(tx.receipt.rawLogs[3]);
-          assert.equal(newOc.address, tx.receipt.rawLogs[3].address);
+          assert.equal(oc.address, tx.receipt.rawLogs[3].address);
           assert.equal(request.topic, web3.utils.keccak256("OracleRequest(bytes32,address,bytes32,uint256,address,bytes4,uint256,uint256,bytes)"));
         });
       });
@@ -87,7 +75,7 @@ contract("MyContract", (accounts) => {
 
     beforeEach(async () => {
       await link.transfer(cc.address, web3.utils.toWei("1", "ether"));
-      let tx = await cc.createRequest(jobId, url, path, times, {from: consumer});
+      let tx = await cc.createRequestTo(oc.address, jobId, payment, url, path, times, {from: consumer});
       request = h.decodeRunRequest(tx.receipt.rawLogs[3]);
       await h.fulfillOracleRequest(oc, request, response, {from: oracleNode});
     });
@@ -125,10 +113,10 @@ contract("MyContract", (accounts) => {
 
     beforeEach(async () => {
       await link.transfer(cc.address, web3.utils.toWei("1", "ether"));
-      let tx = await cc.createRequest(jobId, url, path, times, {from: consumer});
+      let tx = await cc.createRequestTo(oc.address, jobId, payment, url, path, times, {from: consumer});
       request = h.decodeRunRequest(tx.receipt.rawLogs[3]);
     });
-  
+
     context("before the expiration time", () => {
       it("cannot cancel a request", async () => {
         await h.assertActionThrows(async () => {
@@ -136,11 +124,11 @@ contract("MyContract", (accounts) => {
         });
       });
     });
-  
+
     context("after the expiration time", () => {
       beforeEach(async () => {
         await h.increaseTime5Minutes();
-	  });
+      });
 
       context("when called by a non-owner", () => {
         it("cannot cancel a request", async () => {
@@ -148,11 +136,11 @@ contract("MyContract", (accounts) => {
             await cc.cancelRequest(request.id, request.payment, request.callbackFunc, request.expiration, {from: stranger});
           });
         });
-	  });
+      });
 
       context("when called by an owner", () => {
         it("can cancel a request", async () => {
-		  await cc.cancelRequest(request.id, request.payment, request.callbackFunc, request.expiration, {from: consumer});
+          await cc.cancelRequest(request.id, request.payment, request.callbackFunc, request.expiration, {from: consumer});
         });
       });
     });

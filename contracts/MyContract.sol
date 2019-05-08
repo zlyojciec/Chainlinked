@@ -10,8 +10,6 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
  * local test networks
  */
 contract MyContract is ChainlinkClient, Ownable {
-  // solium-disable-next-line zeppelin/no-arithmetic-operations
-  uint256 constant private ORACLE_PAYMENT = 1 * LINK;
   uint256 public data;
 
   /**
@@ -19,11 +17,9 @@ contract MyContract is ChainlinkClient, Ownable {
    * and Oracle contract addresses
    * @dev Sets the storage for the specified addresses
    * @param _link The address of the LINK token contract
-   * @param _oracle The address of the Oracle contract
    */
-  constructor(address _link, address _oracle) public {
+  constructor(address _link) public {
     setChainlinkToken(_link);
-    setChainlinkOracle(_oracle);
   }
 
   /**
@@ -33,37 +29,6 @@ contract MyContract is ChainlinkClient, Ownable {
    */
   function getChainlinkToken() public view returns (address) {
     return chainlinkTokenAddress();
-  }
-
-  /**
-   * @notice Returns the address of the Oracle contract
-   * @dev This is the public implementation for chainlinkOracleAddress, which is
-   * an internal method of the ChainlinkClient contract
-   */
-  function getOracle() public view returns (address) {
-    return chainlinkOracleAddress();
-  }
-
-  /**
-   * @notice Creates a request to the stored Oracle contract address
-   * @dev Calls createRequestTo using the stored Oracle contract address
-   * for the first parameter
-   * @param _jobId The bytes32 JobID to be executed
-   * @param _url The URL to fetch data from
-   * @param _path The dot-delimited path to parse of the response
-   * @param _times The number to multiply the result by
-   */
-  function createRequest(
-    bytes32 _jobId,
-    string _url,
-    string _path,
-    int256 _times
-  )
-    public
-    onlyOwner
-    returns (bytes32)
-  {
-    return createRequestTo(getOracle(), _jobId, _url, _path, _times);
   }
 
   /**
@@ -79,6 +44,7 @@ contract MyContract is ChainlinkClient, Ownable {
   function createRequestTo(
     address _oracle,
     bytes32 _jobId,
+    uint256 _payment,
     string _url,
     string _path,
     int256 _times
@@ -91,7 +57,7 @@ contract MyContract is ChainlinkClient, Ownable {
     req.add("url", _url);
     req.add("path", _path);
     req.addInt("times", _times);
-    requestId = sendChainlinkRequestTo(_oracle, req, ORACLE_PAYMENT);
+    requestId = sendChainlinkRequestTo(_oracle, req, _payment);
   }
 
   /**

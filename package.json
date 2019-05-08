@@ -4,8 +4,10 @@
   "license": "MIT",
   "scripts": {
     "compile": "./node_modules/.bin/truffle compile",
-    "console": "./node_modules/.bin/truffle console --network development",
-    "migrate": "./node_modules/.bin/truffle migrate --reset --network development",
+    "console:dev": "./node_modules/.bin/truffle console --network development",
+    "console:live": "./node_modules/.bin/truffle console --network live",
+    "migrate:dev": "./node_modules/.bin/truffle migrate --reset --network development",
+    "migrate:live": "./node_modules/.bin/truffle migrate --network live",
     "lint": "./node_modules/.bin/eslint .",
     "lint:fix": "./node_modules/.bin/eslint . --fix",
     "lint:sol": "./node_modules/.bin/solium -d .",
@@ -15,22 +17,23 @@
     "test": "./node_modules/.bin/truffle test --network test"
   },
   "dependencies": {
-    "chainlink": "0.6.3",
+    "chainlink": "0.6.3-beta2",
     "chainlink-test-helpers": "^0.6.0-3",
-    "openzeppelin-solidity": "^1.12.0"
+    "openzeppelin-solidity": "^1.12.0",
+    "truffle-hdwallet-provider": "^1.0.8"
   },
   "devDependencies": {
     "bn.js": "^4.11.8",
-    "eslint": "^5.14.1",
+    "eslint": "^5.16.0",
     "eslint-config-standard": "^12.0.0",
-    "eslint-plugin-import": "^2.16.0",
-    "eslint-plugin-node": "^8.0.1",
-    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-import": "^2.17.2",
+    "eslint-plugin-node": "^9.0.1",
+    "eslint-plugin-promise": "^4.1.1",
     "eslint-plugin-standard": "^4.0.0",
-    "ethereumjs-abi": "^0.6.6",
+    "ethereumjs-abi": "^0.6.7",
     "ethereumjs-util": "^6.1.0",
-    "solium": "^1.2.3",
+    "solium": "^1.2.4",
     "solium-plugin-zeppelin": "^0.0.2",
-    "truffle": "^5.0.4"
+    "truffle": "^5.0.15"
   }
 }

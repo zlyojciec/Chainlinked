@@ -1,5 +1,5 @@
-var Migrations = artifacts.require("Migrations");
+let Migrations = artifacts.require("Migrations");
 
-module.exports = deployer => {
+module.exports = (deployer) => {
   deployer.deploy(Migrations);
 };

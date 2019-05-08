@@ -19,7 +19,7 @@ jobs:
           command: npm install
       - run:
           name: Migrate Contracts
-          command: npm run migrate
+          command: npm run migrate:dev
       - run:
           name: Test Contracts
           command: npm test

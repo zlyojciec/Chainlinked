@@ -4,9 +4,10 @@
 	  ".gitignore"
   ],
   "commands": {
-    "Compile": "npm run compile",
-    "Migrate": "npm run migrate",
-    "Test": "npm test"
+    "Compile contracts": "npm run compile",
+    "Run tests": "npm test",
+    "Migrate to development network": "npm run migrate:dev",
+    "Migrate to live network": "npm run migrate:live"
   },
   "hooks": {
     "post-unpack": "npm install"
